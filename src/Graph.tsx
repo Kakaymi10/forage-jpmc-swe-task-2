@@ -14,7 +14,7 @@ interface IProps {
  * Perspective library adds load to HTMLElement prototype.
  * This interface acts as a wrapper for Typescript compiler.
  */
-interface PerspectiveViewerElement {
+interface PerspectiveViewerElement extends HTMLElement {
   load: (table: Table) => void,
 }
 
@@ -32,7 +32,11 @@ class Graph extends Component<IProps, {}> {
 
   componentDidMount() {
     // Get element to attach the table from the DOM.
-    const elem: PerspectiveViewerElement = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+    /*Since we changed the `PerspectiveViewerElement` to extend the
+    `HTMLElement` earlier, we can simplify the `const elem` definition by
+    assigning it directly to the result of `document.getElementsByTagName`.
+    */
+    const elem = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
 
     const schema = {
       stock: 'string',
@@ -44,8 +48,28 @@ class Graph extends Component<IProps, {}> {
     if (window.perspective && window.perspective.worker()) {
       this.table = window.perspective.worker().table(schema);
     }
+    
+    
     if (this.table) {
+
+      /*Fixing '''Argument of type '{ stock: string; top_ask_price: 
+      string; top_bid_price: string; timestamp: string; }' 
+      is not assignable to parameter of type 'string'''*/
+
+      // Assuming "elem" is a reference to the element where you want to set the "aggregates" attribute
+      const aggregates = {
+        stock: "distinct count",
+        top_ask_price: "avg",
+        top_bid_price: "avg",
+        timestamp: "distinct count"
+      };
+
       // Load the `table` in the `<perspective-viewer>` DOM reference.
+      elem.setAttribute('view', 'y_line');
+      elem.setAttribute('colum-pivots', '["stock"]');
+      elem.setAttribute('row-pivots', '["timestamp"]');
+      elem.setAttribute('columns', '["top_ask_price", "top_bid_price"]');
+      elem.setAttribute('aggregates', JSON.stringify(aggregates))
 
       // Add more Perspective configurations here.
       elem.load(this.table);
